@@ -1,0 +1,173 @@
+------------------------------------------------------------------
+VOCABULARY
+------------------------------------------------------------------
+
+- data variable: the primary data recorded in a NetCDF file, e.g., SST
+- slice: a single "matrix" containing the data variable at various
+  locations
+
+------------------------------------------------------------------
+FUNCTIONS
+------------------------------------------------------------------
+
+ncdfData <- selectRegion(ncdfData, xlim, ylim)
+
+** Note: "ncdfData" will be some data format that provides us access
+** to the underlying NetCDF data in a "standardized" form; this will
+** be a format that we work out the details for later.
+
+In most cases, data sets contain information spanning the whole world.
+This function will extract data from such a larger data set to make it
+more suitable for a user-specified geographical area (xlim/ylim), e.g.,
+     North Pacific
+
+Given a series of slices (over time), this function will apply the
+selection to each slice.
+
+------------------------------------------------------------------
+
+ncdfData <- extractSlice(ncdfData, slice)
+
+Extract a single slice ("matrix" for a point in time) from a
+series of slices.
+
+Returns extracted slice as ncdfData.
+
+------------------------------------------------------------------
+
+ncdfData <- insertSlice(ncdfData, ncdfSliceData, position)
+
+Given the complete data set (1st arg.) and data for a single
+slice (2nd args.), insert the slice data into the first
+data set at the specified position.
+
+Such single slices may result from interpolating the data set
+temporarily.
+
+Returns original data set with the inserted slice.
+
+------------------------------------------------------------------
+
+props <- plotSlice(ncdfData, ...)
+
+A high-level plot function, compatible with PBSmapping, for
+initializing a plot window for a slice of data that uses an
+appropriate aspect ratio.  This function is essentially the
+satellite-data equivalent to plotMap (PBSmapping).
+
+Appearance-wise, this function will produce an image like
+that obtained from R's existing "image" or "contour"
+functions.
+
+After this call, one can use addPolys (PBSmapping) to add
+polygons over the plot.
+
+Returns plotting properties akin to PBSmapping.
+
+------------------------------------------------------------------
+
+numericVector <- assessMissingData(ncdfData)
+
+Data may be missing (NA) in NetCDF files. This function will
+determine how much is missing.  Given a series of slices, it will
+return an assessment for each slice (a vector).
+
+------------------------------------------------------------------
+
+ncdfData <- interpolateMissingData(ncdfData, interpolationFunction)
+
+Due to cloud coverage it is very common to have missing values (NA)
+in data sets. By using a technique (such as Kriging) missing data
+can be predicted and the result can be more informative.
+
+This function may operate on a series of slices.  In that case, the
+interpolation function may look back/ahead in time and spatially.
+Otherwise, the it will only perform interpolation spatially.
+
+The function may record interpolated values in a temporary data set
+while operating, and after making calculations for every NA, fill
+those temporary values into the returned data set.  (This way,
+interpolated values won't affect subsequent interpolation?)
+
+------------------------------------------------------------------
+
+ncdfSliceData <- interpolateTemporally(ncdfData, interpolationFunction)
+
+Given a data set, interpolate a new slice that is between
+two existing slices.
+
+------------------------------------------------------------------
+
+numeric <- krigAnalysis(ncdfData, slice, x, y)
+
+Applied by interpolateMissingData to fill in NAs.  Takes the complete
+data set (ncdfData) as input along with the location in time (slice)
+and space (x, y) of the NA that must be filled in.
+
+Other interpolation functions may be desirable.
+
+------------------------------------------------------------------
+
+ncdfData <- convertCoverage(ncdfData, resolution)
+
+With the use of different data sets (SST Chl) it is common for them
+to vary in spatial coverage.
+   e.g., SST (1/4 degree) Chl (4km)
+For data analysis it is very useful for data to be in the same
+resolution. 
+
+------------------------------------------------------------------
+
+numeric <- getResolution(ncdfData)
+
+Returns the resolution of a data set suitable for convertCoverage.
+
+------------------------------------------------------------------
+
+timeSeries <- extractTimeSeries(ncdfData, xlim, ylim)
+
+Creating a time series with data is very important for visualization
+of a data set. This function should be able to create a time series
+based on a particular sub-area of interest to the user.
+
+The statistics for a sub-areas should include:
+
+	  time
+	  average
+	  SD (standard deviation)
+	  number of missing values (pixels)
+	  
+This function should be able to be selected based on a time interval
+such as 4 days, 8 days, or monthly averages specified by the user.
+
+Questions:
+- is the sub-area ID necessary in the list? (it seems redundant?)
+- what about anomalies? how would they be represented (or can they
+  be determined using existing R functions (lapply, which, ...)
+
+------------------------------------------------------------------
+
+plotTimeSeries(timeSeries, tlim)
+
+Time series data (from extractTimeSeries) should be plotted on
+a map with the mean data values over a specified interval.
+
+Might supply a tlim arguments (akin to xlim/ylim) to limit the
+plot in time.
+
+Questions:
+- previous e-mail mentioned baselines, and we aren't clear on
+  what this means?
+
+------------------------------------------------------------------
+
+identifySubRegions(ncdfData, PolySet)
+
+This function might somehow/magically identify which ncdfData
+points fall within different polygons in a PolySet, e.g., for
+identifying which data points occur at which depths.
+
+Question:
+- there are issues with data representation here... and the
+  output of this function may serve as input to earlier functions
+  
