@@ -1,0 +1,65 @@
+PBSsatellite Changes
+==============================
+Authors: NB  = Nicholas Boers
+         NL  = Nicolas Lefebvre
+         RH  = Rowan Haigh
+         LG  = Lyse Godbout
+------------------------------
+
+1.0.0 (2020-02-04) [Rcheck=F, Rbuild=F]
+  * R code
+    + Added new function `write.ncdfData' to extract matrices of data from user-specified slices and write them to CSV files. (RH 181109)
+    + Added new dot functions to facilitate computation and plotting (RH 181109)
+      - `.findRC' -- return no. (rows, columns) for multi-panel figures given no. figures to fit on one page;
+      - `.pInv'   -- find nearest position in vector choice using a target point.
+    + Modified function `plot.ncdfDat' to exclude argument `zlim' (which can be used by `image') from `plotMap'. (RH 181108)
+    + Added new function `addVstrip' to add a vertical colour-code strip demarcated by discrete values. (RH 181106)
+    + Added new function `download.ncdfData' to retrieve sets of ncdf4 data files, usually from NASA. (RH 181105)
+    + Modified function `merge.ncdfData' to accept vectors of `Utime', usually one for each file that is merged. (RH 181105)
+    + Modified function `read.ncdfData' to deal with various issues: (RH 181105)
+      - fixed bugs from the original code;
+      - fixed array dimension dropping when time element was missing (e.g., single-time ncdf4 files).
+    + Modified function `print.ncdfData' to handle single-point X and/or Y data files. (RH 181031)
+    + Modified function `plot.ncdfData' to deal with missing time dimension and situations where X and/or Y is only one point. (RH 181031)
+    + Modified function `clipRegion' to deal with cases when clipping yields only one X or Y point. (RH 181031)
+      - Limits of the grid cell were unknown when only one cell represented by one point occurreed in the X and/or Y dimension.
+    + Added new function `merge.ncdfData' to import a series of NetCDF files and merge them into one ncdfData object. (RH 181024)
+      - Can also use existing ncdfData files in the working directory and merge them.
+      - Can also write the merged ncdfData object to a NetCDF data file.
+    + Modified function `read.ncdfData' (RH 181024)
+      - Added logical argument `verbose' in case the user wants to know what is available in the open ncdf4 file.
+      - Added attribute `dataVname' to imported ncdfData object.
+    + Modified function `.getSliceNames' to convert more time options (`minutes', `weeks', `months', `years') to seconds. (RH 181023)
+    + Added logical argument `showXY' to function `plot.ncdfData' to show points that represent each grid cell. (RH 181022)
+      - When creating a NetCDF data object from irregular (X,Y) coordinates, grid cells are also irregular
+      - with boundaries 1/2 the distance between X-neighbours and between Y-neighbours.
+  * Documentation
+    + Added and updated `README.md' for GitHub distribution at some point. (RH 200204)
+    + Re-arranged functions in `PBSsatellite.r' in alphabetic order (RH 181024)
+      - Hidden (dot) functions are grouped together after the main functions group.
+      - Removed the extra module `RH_funcs.r' and put everything into `PBSsatellite.r'.
+    + Updated `authors' section of Rd files. (RH 181023)
+    + Changed backticks ` in DESCRIPTION to single quotes ' (Kurt Hornik 160920)
+
+0.2.0 (2016-03-24)
+    + Fixed bug in function `read.ncdfData' which was incorrectly subsetting X & Y. (RH 160324)
+    + Fixed a bug in function `assessMissingData' to properly calculate percentage of missing values. (RH 160323)
+    + Realized that I was updating an older version of PBSsatellite.R (150309); reconciled with latest version (150410) (RH 160323)
+    + Added a small package vignette called `PBSsatelliteIntro.Rnw'. (RH 160323)
+    + Updated status of package using semantic versioning (RH 160323)
+	Given a version number MAJOR.MINOR.PATCH, increment the:
+		MAJOR version when you make incompatible API changes,
+		MINOR version when you add functionality in a backwards-compatible manner, and
+		PATCH version when you make backwards-compatible bug fixes.
+    + Added two new functions -- `create.ncdfData' and `convert.ncdfData', along with Rd files. (RH 160322)
+      - Put into separate module called `RH_funcs.r'.
+    + Added the UG from May 5, 2015 (RH 160322)
+    + Modified `read.ncdfData' to look for the (x,y,t) names in the ncdf4 rather than failing on default names. (RH 160321)
+
+0.1 (2016-03-22)
+    + Added the development version to RH's local SVN repository (RH 160322)
+    + Revised User's Guide (NL/NB 150721)
+    + Created first draft of User's Guide (UG) for development version (NL/NB 150501)
+    + Built development version 0.1 for Windows (RH 150416)
+    + Built development version 0.1 for Unix (NB 150313)
+    + Created initial draft of function descriptions (NF/NB 150126)

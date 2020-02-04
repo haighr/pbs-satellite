@@ -1,0 +1,66 @@
+\documentclass[letter,12pt]{article}
+%Vignette for Package PBSsatellite (RH 2016-03-23)
+% Find Non ASCII characters: [~^t^r^n -~]+
+
+% For colors
+\usepackage{color}
+%\definecolor{red}{rgb}{0.8039216,0.2156863,0}
+\definecolor{red}{rgb}{1, 0, 0}
+\definecolor{green}{rgb}{0, 1, 0}
+\definecolor{blue}{rgb}{0, 0, 1}
+
+%\usepackage{verbatim}
+%\usepackage{hyperref}
+\usepackage{hyphenat}
+
+
+% Definitions
+\newcommand{\slan}{{\tt S}}
+\newcommand{\rlan}{{\tt R}}
+\newcommand{\pbss}{{\tt \nohyphens{PBSsatellite}}}
+\newcommand{\pbsm}{{\tt \nohyphens{PBSmapping}}}
+\newcommand{\tcl}{{\tt Tcl/Tk}}
+\newcommand{\code}[1]{{\tt #1}}
+\newcommand{\ital}[1]{{\it #1}}
+\newcommand{\bold}[1]{{\bf #1}}
+\newcommand{\under}[1]{{\underline {#1}}}
+\newcommand{\red}[1]{{\textcolor{red} {#1}}}
+
+% Keep on one page
+\topmargin -1.0in \oddsidemargin 0.5in \evensidemargin 0.5in
+\textheight 9.0in \textwidth 5.5in
+
+\begin{document}
+
+\title{Introduction to \pbss}
+\author{Rowan Haigh and Nicholas Boers}
+\maketitle
+
+\section{What is \pbss{}?}
+
+\pbss{} is a collaborative effort between the Pacific Biological Station (PBS) and MacEwan University to design software that simplifies the extraction and statistical analysis of gridded satellite data.
+This software uses \pbsm, an existing R software package, to produce plots.
+%The tools provided in this package provide users with the functionality necessary to accomplish statistical analysis from a myriad of satellite data sources.
+Additionally, users are able to produce their own functionality and data interpretation algorithms and incorporate these functions into the package's
+analysis methods. 
+This provides users with a platform that simplifies the complex problem of satellite data analysis and visualization while providing the ability for personal research and method integration.
+
+\section{What is PBS?}
+
+The initials \bold{PBS} refer to the Pacific Biological Station, a major fisheries laboratory operated by Fisheries and Oceans Canada on the Pacific coast in Nanaimo, British Columbia, Canada.
+
+\section{What is MacEwan University?}
+
+MacEwan University is a post-secondary educational institution located in Edmonton, Alberta, Canada.
+Dr. Nicholas Boers is an Assistant Professor in the Department of Computer Science within the Faculty of Arts \& Science.
+His current research focuses on wireless sensor network development for urban environments.
+Specifically, he has been looking at techniques for classifying and avoiding interference within these networks.
+
+\section{Where is the User's Guide?}
+
+The R library directory \code{.../R-3.2.4/library/\pbss/doc} includes a User's Guide to the package contents and functions.
+
+
+%\vspace*{2ex} \noindent {\bf \Large References} \vspace*{2ex}
+
+\end{document}

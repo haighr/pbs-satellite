@@ -1,0 +1,12 @@
+exportPattern("^[^\\.]")
+exportPattern("^\\.PBS")
+exportPattern("^\\.create")
+exportPattern("^\\.get")
+exportPattern("^\\.ncdf")
+
+importFrom("PBSmapping", "plotMap", "findPolys", "as.EventData")
+importFrom("ncdf4", "nc_open", "nc_close", "ncvar_get", "ncdim_def", "ncvar_def", "nc_create", "ncvar_put")
+importFrom("data.table", "fread")
+
+S3method(plot, ncdfData)
+S3method(print, ncdfData)

@@ -1,0 +1,25 @@
+Package: PBSsatellite
+Version: 1.0.0
+Date:    2020-02-04
+Title:   Spatio-Temporal Analysis of Satellite Data
+Authors@R: c(
+   person(c("Nicholas", "R."), "Lefebvre", role = "aut", email = "lefebvren4@mymacewan.ca"),
+   person(c("Nicholas", "M."), "Boers", role = "aut", email = "boersn@macewan.ca"),
+   person("Lyse", "Godbout", role = "ctb", email = "lyse.godbout@dfo-mpo.gc.ca"),
+   person("Rowan", "Haigh",  role = c("aut", "cre"), email = "rowan.haigh@dfo-mpo.gc.ca"))
+Author: Nicholas R. Lefebvre [aut],
+   Nicholas M. Boers [aut],
+   Lyse Godbout [ctb],
+   Rowan Haigh [aut, cre]
+Maintainer: Rowan Haigh <rowan.haigh@dfo-mpo.gc.ca>
+Copyright:  2015-2020, Fisheries and Oceans Canada
+Depends: R (>= 3.5.0), ncdf4, PBSmapping (>= 2.72.1), data.table
+Description: Create a consistent R object for 'NetCDF' data using
+   a newly defined 'ncdfData' class. Functions extract and store
+   gridded satellite data and facilitate spatial analysis
+   using the 'PBSmapping' package. The tools provide users with 
+   the functionality necessary to accomplish statistical analysis
+   of a myriad of satellite data sources.
+License: GPL (>= 2)
+NeedsCompilation: no
+
