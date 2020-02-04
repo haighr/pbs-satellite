@@ -1,0 +1,1185 @@
+\documentclass[11pt]{report}
+
+\hyphenation{PBSsatellite}
+
+\usepackage[inline,shortlabels]{enumitem}
+
+\usepackage[backend=bibtex]{biblatex}
+\DefineBibliographyStrings{english}{%
+  bibliography = {References},
+}
+\bibliography{report}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[Bjornstrup]{fncychap}
+
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage[utf8]{inputenc}
+
+% when combined with placing \caption at the top of a 'tabular'
+% environment, the 'caption' package causes captions above a table
+% to have the correct amount of vertical space
+\usepackage[tableposition=top]{caption}
+
+\usepackage{multirow}
+
+\usepackage{xltxtra}
+\setmainfont[
+  Ligatures      = TeX,
+]{Helvetica Neue}
+\setmonofont[
+  AutoFakeSlant,
+  BoldItalicFeatures={FakeSlant},
+]{Courier}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{indentfirst}
+\usepackage{lipsum}
+\usepackage{booktabs}
+\usepackage{fancyvrb}
+
+\usepackage{color}
+\definecolor{strings}{RGB}{70,70,70}
+\definecolor{keywords}{RGB}{180,0,0}
+\definecolor{identifiers}{RGB}{0,0,0}
+\definecolor{comments}{RGB}{49,146,92}
+
+\usepackage{listings}
+
+\lstdefinelanguage{plain}{%
+  basicstyle=\ttfamily,
+  keywordstyle={},
+  identifierstyle={},
+  commentstyle={},
+  stringstyle={},
+  numbers=none,
+  frame=none}
+
+\lstset{language=R, % set default to bash; override for Perl
+  basicstyle=\ttfamily,
+  keywordstyle=\color{keywords}\bfseries,
+  identifierstyle=\color{identifiers},
+  commentstyle=\color{comments}\itshape,
+  stringstyle=\color{strings},
+  numbers=none,
+  numberstyle=\tiny,
+  stepnumber=1,
+  numbersep=5pt,
+  breaklines=true,
+  frame=none}
+
+\usepackage{titling}
+
+\title{PBSsatellite 1.0: User's Guide}
+\date{\today}
+\def\trnumber{TR-2017-001}
+
+\newcommand{\titlePP}{\begingroup%
+  \thispagestyle{empty}
+  \phantom{}\vfill
+  \centering
+  {\Huge\bfseries{}\thetitle}
+  \par\vfill
+  {\large
+    \begin{tabular}{p{2.5in}p{2.5in}}
+      Nicholas R. Lefebvre\newline{}MacEwan University\newline{}\href{mailto:lefebvren4@mymacewan.ca}{lefebvren4@mymacewan.ca}
+      & Nicholas M. Boers\newline{}MacEwan University\newline{}\href{mailto:boersn@macewan.ca}{boersn@macewan.ca} \\
+      & \\
+      Lyse Godbout\newline{}Fisheries and Oceans Canada\newline{}\href{mailto:Lyse.Godbout@dfo-mpo.gc.ca}{Lyse.Godbout@dfo-mpo.gc.ca}
+      & Rowan Haigh\newline{}Fisheries and Oceans Canada\newline{}\href{mailto:Rowan.Haigh@dfo-mpo.gc.ca}{Rowan.Haigh@dfo-mpo.gc.ca} \\
+    \end{tabular}
+  }
+  \par\vfill\noindent{\LARGE{}\bfseries{}Technical Report}
+  \par\vspace{0.05ex}{\LARGE\trnumber}
+  \par\vspace{0.05ex}{\LARGE\thedate}
+  \par\vspace{4.00ex}{\LARGE{}Department of Computer Science}
+  \par\vspace{0.05ex}{\LARGE{}MacEwan University}
+  \par\vspace{0.05ex}{\LARGE{}Edmonton, Alberta, Canada} 
+  \par\vspace{4.00ex}\includegraphics[height=2.5cm]{macewan}
+  \par\vfill\phantom{}
+  \endgroup}
+
+\usepackage{multicol}
+\usepackage{hyperref}
+
+\setlength\parindent{24pt}
+
+\begin{document}
+
+\sloppypar
+
+\titlePP
+
+\begin{abstract}
+\noindent
+This report describes the first version of PBSsatellite, software designed to simplify the extraction and statistical analysis of gridded satellite data.
+This software extends the R Project for Statistical Computing, and it uses PBSmapping, an existing R package, to aid in spatial analysis and the production of plots.
+The tools found in this package provide users with the functionality necessary to work with data from a variety of sources.
+Additionally, users are able to write their own data interpretation algorithms and provide them as arguments to some analysis functions within this package.
+\end{abstract}
+
+\renewcommand{\abstractname}{Acknowledgements}
+
+\begin{abstract}
+\noindent
+The MacEwan authors thank Dr. Lyse Godbout from Fisheries and Oceans Canada for approaching us with the business case that led to the PBSsatellite R package.
+Moreover, they thank both of their collaborators at Fisheries and Oceans Canada for their insight and assistance during the development of the software.
+\end{abstract}
+
+\tableofcontents
+
+\chapter{Introduction}
+
+When the development of the package PBSsatellite began in 2015, the existing R packages related to satellite data typically focused on importing, rather than analyzing, data.
+With these libraries, users were largely responsible for writing their own analysis functions.
+This package was created to address the analysis need.
+It provides a frontend to the existing import tools, and it provides additional functions for satellite data analysis.
+In some cases, it complements PBSmapping, an existing R package that offers tools for spatial analysis and the plotting of both linear and polygonal data.
+
+This chapter explores two fundamental aspects of PBSsatellite:
+\begin{enumerate*}[(a)]
+\item the use of the NetCDF file format and the reasons for its adoption and
+\item the data sources that were used in the development of the package's data structures.
+\end{enumerate*}
+
+Chapter~\ref{c:DataStructures} explains the package's primary data structure (\code{\hyperref[s:ncdfData]{ncdfData}}).
+Most of the package's functions for the  extraction and manipulation of data require objects of this structure.
+Additionally, this chapter explains the \code{\hyperref[sub:timeseries]{TimeSeries}} data structure in further detail.
+This latter structure simplifies the visualization of satellite data trends and the creation of plots.
+ 
+Chapter~\ref{c:UsagePatterns} demonstrates complex applications of PBSsatellite's features.
+The first example shows the creation of a time series plot that compares, over time, sea surface temperatures for the Northern and Southern Hemispheres.
+The second harnesses the power of PBS Mapping to create and subsequently use a complex polygon for selecting and plotting satellite data covering the BC coast.
+The final example guides a user through the conversion from an incompatible file format (HDF) to a NetCDF file that can be imported into PBSsatellite.
+
+This report concludes with Ch.~\ref{c:PBSsatelliteFunctions}, which documents the functions found in PBSsatellite.
+This function documentation is also available within R's help system.
+
+\section{NetCDF dependency}
+\label{s:ncdfDependency}
+
+Three formats are widely used for exchanging and storing meteorological data:
+\begin{enumerate*}[(a)]
+\item Extensible Markup Language (XML),
+\item Network Common Data Format (NetCDF), and
+\item Hierarchical Data Format (HDF)~\cite{WMO15}.
+\end{enumerate*}
+XML is substantially more verbose than the other two formats, and this verbosity leads to unnecessarily large files.
+With this being the case, XML was not seriously considered as the primary format for PBSsatellite.
+The two remaining formats, NetCDF and HDF, received further consideration.
+
+We selected NetCDF over HDF primarily due to the availability and quality of R packages for importing these files.
+At the time of writing, the Comprehensive R Archive Network (CRAN) did not host any packages explicitly for importing HDF4 files.
+The hosted package rgdal\footnote{
+  rgdal is available from \url{https://cran.r-project.org/web/packages/rgdal/index.html}.}
+provides bindings for the Geospatial Data Abstraction Library, which can import HDF4 files when appropriately configured.
+Unfortunately, the available Mac OS X and (reportedly) Windows versions are built \textit{without} support for HDF4.
+In contrast, three available NetCDF packages were hosted on CRAN: ncdf, ncdf4, and RNetCDF.\footnote{
+  ncdf is no longer available on CRAN, ncdf4 is available from \url{https://cran.r-project.org/web/packages/ncdf4/index.html}, and RNetCDF is available from \url{https://cran.r-project.org/web/packages/RNetCDF/index.html}.
+  Additional packages suitable for importing NetCDF files appear to now be available, too.}
+Therefore, we selected NetCDF over HDF for PBSsatellite.
+
+After focusing on NetCDF, we aimed to build upon the best of the three available NetCDF packages.
+The best package would maximize NetCDF compatibility while minimizing additional system requirements (see Table~\ref{tab:libraries}).
+
+\begin{table}[!h]
+  \raggedright
+  \centering
+  \caption{NetCDF Packages}
+  \begin{tabular}{lp{2.65in}p{2.65in}} \hline
+    \toprule
+    \textbf{Package}
+    & \textbf{Advantages}
+    & \textbf{Disadvantages}
+    \\\midrule
+    ncdf
+    & \begin{itemize*}
+    \item minimal requirements
+    \end{itemize*}
+    & \begin{itemize*}
+    \item supports only NetCDF version 3
+    \end{itemize*}
+    \\\midrule
+    
+    ncdf4
+    & \begin{itemize*}
+    \item supports NetCDF versions 3 \& 4\newline
+    \item supports offsetting into data files
+    \end{itemize*}
+    & \begin{itemize*}
+    \item requires library netcdf ($\ge$~4.1)
+    \end{itemize*}
+    \\\midrule
+
+    RNetCDF
+    & \begin{itemize*}
+    \item none
+    \end{itemize*}
+    & \begin{itemize*}
+    \item supports only NetCDF version 3\newline
+    \item requires library netcdf ($\ge$~3.6),\newline
+      \phantom{}\hspace{0.6em}udunits ($\ge$~1.11.7), or\newline
+      \phantom{}\hspace{0.6em}udunits2 ($\ge$~2.1.22)
+    \end{itemize*}~\\
+    \bottomrule
+  \end{tabular}
+  \label{tab:libraries}
+\end{table}
+
+It was important to make PBSsatellite compatible with as many data sets as possible.
+Given the information in Table~\ref{tab:libraries}, we chose ncdf4.
+While ncdf4 adds one external dependency,\footnote{
+  This external library, netcdf, is available for Mac OS X, Linux, and Windows from a variety of sources.}
+it provides support for both NetCDF version 3 and 4 and the ability to offset into NetCDF data files.
+When users are interested in only a subset of data within a large data set, the offset functionality can effectively skip irrelevant data to reach desired data, making processing significantly faster.
+
+\section{Data sources}
+
+Before designing the \code{\LinkA{ncdfData}{ncdfData}} object (Section~\ref{s:ncdfData}), eight data sets were obtained and inspected.
+Five of these data sets were from the National Oceanic and Atmospheric Administration (NOAA), one was from the Joint Institute for the Study of the Atmosphere and Ocean (JISAO), one was from the U.S. Joint Global Ocean Flux Study (USJGOFS), and the last was from the Climate Research Unit (CRU) at the University of East Anglia.
+These data sets were analyzed for consistencies, particularly in data location and attribute naming.
+
+Where data sets consistently named their attributes in a particular way, this naming convention became the default for \code{\LinkA{ncdfData}{ncdfData}} attribute acquisition.
+For example, most NetCDF data sets use the names ``lat'' and ``lon'' to store attributes of latitude and longitude coordinate sequences, respectively.
+Whenever possible, PBSsatellite locates such fundamental attributes automatically.
+When a NetCDF data file does not follow the expected naming conventions, the user must provide attribute names to the import functions to ensure that PBSsatellite locates the correct attributes.   
+
+The data variable (``Data Location'', Table~\ref{tab:NetCDF}) most commonly appeared as the first variable.
+Some data sets, however, used a different location, e.g.,~the USJGOFS data set used the second data variable.
+For this reason, the first variable is the default when creating an \code{\LinkA{ncdfData}{ncdfData}} object, but it can be overridden when necessary using the \texttt{dataVariable} argument of the \code{\LinkA{read.ncdfData}{read.ncdfData}} function.
+For example, the user could pass \texttt{dataVariable=2} to \code{\LinkA{read.ncdfData}{read.ncdfData}} when loading the USJGOFS data set.
+
+\begin{table}
+  \centering
+  % NOTE: \code{\LinkA{...}{...}} does *NOT* work within the caption
+  \caption{The NetCDF data sources initially selected prior to designing the \texttt{ncdfData} object.
+    A data location of ``error'' indicates that the R ncdf4 library could not open the file, and such files were not used in the design stage.}
+  \begin{tabular}{lp{2.6in}c}
+    \toprule
+     \textbf{Source}  & \textbf{Data Type} & \textbf{Data Location} \\
+     \midrule
+     NOAA      & Bedrock                           & error \\
+     NOAA      & Sea Surface Temperature (Kelvin)  & 1 \\
+     NOAA      & Sea Surface Temperature (Celsius) & 1 \\
+     NOAA      & Sea Surface Temperature           & error \\
+     NOAA      & Sea Surface Temperature (Kelvin)  & 1 \\
+     JISAO     & Chlorophyll Concentrations        & 1 \\
+     USJGOFS   & Chlorophyll Concentrations        & 2 \\
+     CRU       & Sea Surface Temperature (Kelvin)  & 1 \\
+     \bottomrule
+  \end{tabular}
+  \label{tab:NetCDF}
+\end{table}
+
+The sort order used for the X and Y coordinates was also common between several data sources.
+Most of the data sets had increasing X (longitude) and decreasing Y (latitude) coordinates.
+While it is possible to reorder these coordinates after creation, the operation can be time consuming.
+For that reason, we adopted the most frequently encountered order: increasing X and decreasing Y.
+When a NetCDF file does not follow this convention, \code{\LinkA{read.ncdfData}{read.ncdfData}} detects the situation and reorganizes the X and Y coordinates accordingly so that the resulting object is always consistent in its ordering.
+
+The time units within NetCDF files varied.
+For example, some files strictly used seconds since an epoch, whereas others used minutes or hours since an epoch.
+The format of this time attribute also varied greatly between data sets, e.g., ``seconds since 1981-01-01 00:00:00'' or ``hours since 1997-1-1 1:0:0''.
+When creating an \code{\LinkA{ncdfData}{ncdfData}} object, the import routine performs a date conversion on these time attributes to create consistent timestamps.
+The creation of consistent timestamps simplifies subsequent data extraction and comparison operations.
+For example, prior to date conversion, a sheet of data with the epoch ``seconds since 1981-01-01 00:00:00'' could have erroneously received a date of ``1''.
+After introducing date conversion, however, it  correctly receives the date ``1981-01-01 00:00:0\textbf{\underbar{1}}''.
+
+NetCDF data sets frequently have missing data (see Section~\ref{par:missingData}), and the value used to represent them varies between data sets, e.g.,~one data set might use -32767 and another might use -99.
+The ncdf4 package's function \texttt{nc\_open}, which is used by PBSsatellite to read NetCDF files, automatically detects the NetCDF's missing value attribute and replaces all occurrences of the specified value with \lstinline{NA}.
+Given this ncdf4 functionality, missing data consistently appears as \lstinline{NA} within \code{\LinkA{ncdfData}{ncdfData}} objects.
+
+Other inconsistencies included the temperature units in sea surface temperature data sets.
+As stated in Chapter~\ref{c:DataStructures}, \code{\LinkA{ncdfData}{ncdfData}} objects contain an attribute that stores the \code{\LinkA{ncdfData}{ncdfData}}'s data units.
+In most cases, the attributes in \code{\LinkA{ncdfData}{ncdfData}} objects are detected upon import without input from the user.
+In cases where an attribute is not located or an incorrect value is selected, the user can manually change the unit's variable when creating the \code{\LinkA{ncdfData}{ncdfData}} object (the same applies with the data type variable).   
+
+\chapter{Data structures}
+\label{c:DataStructures}
+
+PBSsatellite works with gridded satellite data in the NetCDF format and provides users with tools for manipulating, extracting, and analyzing information in a user-friendly manner. 
+Given the variety of and variability within NetCDF files, this package introduces a new data type, \code{\LinkA{ncdfData}{ncdfData}}, to make the representation of data consistent within PBSsatellite.
+In addition to this new type, the \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function produces a well-defined data frame intended for statistical analyses.
+The sections that follow describe both of these data structures.
+
+% NOTE: \code{\LinkA{...}{...}} does *NOT* work within \section
+\section{\texttt{ncdfData} data structure}
+\label{s:ncdfData}
+
+The \code{\LinkA{ncdfData}{ncdfData}} data structure is the primary type used by the functions in PBSsatellite.
+The structure is a list of named objects (\textit{slices}), where each slice represents satellite data from a point in time and is named with the date.
+More specifically, a slice is a list of matrices, where each matrix is known as a \textit{layer}.
+One of these layers, the data layer, is mandatory, and it contains the gridded satellite data from a point in time.
+This layer is always the first in the slice, i.e.,~the first element in the list of layers.
+In some situations, a slice has additional layers such as the missing and/or error layer. 
+These additional layers are created by the \code{\LinkA{scaleRegion}{scaleRegion}} function, which is used to change the resolution of an \code{\LinkA{ncdfData}{ncdfData}} object.
+
+\subsection{Attributes}
+
+In addition to the R objects (lists and matrices) that must appear in an \code{\LinkA{ncdfData}{ncdfData}} object, these objects must also have a set of attributes (Table~\ref{tab:attributes}).
+This section describes each attribute.
+
+ \begin{table}
+   \centering
+   % NOTE: \code{\LinkA{...}{...}} does *NOT* work within \caption
+   \caption{Required attributes for an \texttt{ncdfData} object.}
+   \begin{tabular}{lp{3in}}
+     \toprule
+     \textbf{Attribute} & \textbf{Description} \\
+     \midrule
+     \texttt{names}     & Vector of timestamps, one per slice \\
+     \texttt{dataType}  & Description of the data set \\
+     \texttt{dataUnits} & Units of the data set \\
+     \texttt{x}         & Vector of longitude coordinates \\
+     \texttt{y}         & Vector of latitude coordinates \\
+     \texttt{class}     & name of the data structure (\code{\LinkA{ncdfData}{ncdfData}}) \\
+     \bottomrule
+   \end{tabular}
+   \label{tab:attributes}
+ \end{table}
+
+An \code{\LinkA{ncdfData}{ncdfData}} object consists of at least one slice, and the conventional attribute \texttt{names} provides each slice's name as a character vector.
+The slice names are timestamps: a slice's data (one or more matrices) is associated with a moment in time.
+Naming slices in this way allows for easy data extraction for both exact dates and date ranges.
+Slices are always stored in chronological order, i.e.,~the first slice in an \code{\LinkA{ncdfData}{ncdfData}} object is the oldest.
+
+The \texttt{dataType} attribute descibes the data being stored, e.g.,~``Long Term Mean of Sea Surface Temperature''.
+Its value is often retrieved automatically when importing NetCDF data, but the user can override the description if desired.
+
+The \texttt{dataUnits} attribute refers to the actual units for the object's data component, e.g.,~``degC'' or ``Kelvin''.
+As with \texttt{dataType}, it is often retrieved automatically and can be overridden.
+Within an \code{\LinkA{ncdfData}{ncdfData}} object, the units are consistent, i.e.,~the \texttt{dataUnits} attribute applies to every slice within the object.
+
+The \texttt{x} attribute provides a numeric vector of longitude values (in degrees) for the X axis of the data in each slice.
+This sequence is always stored in ascending order, i.e., longitude values increase from left to right on a map.
+Note that internally, this attribute actually names the \textit{rows} of a slice matrix rather than the columns.
+Storing the data in this manner allows for the familiar ordering of X and Y when indexing a matrix, i.e.,~\verb+[X, Y]+.
+
+The \texttt{y} attribute provides a numeric vector of latitude values (in degrees) for the Y axis of the data in each slice.
+This sequence is always stored in descending order, i.e., latitude values decrease from top to bottom on a map.
+Note that internally, this attribute actually names the \textit{columns} of a slice matrix rather than the rows for the reason discussed earlier.
+
+Given the sort order of the values in the \texttt{x} and \texttt{y} attributes, the top-left corner of a map is the origin.
+For example, if a variable \texttt{s} contains a matrix of data, the point \verb+s[1, 1]+ is located in the top-left corner of a plotted map.
+
+In addition to the above attributes, an \code{\LinkA{ncdfData}{ncdfData}} object must have the class \code{\LinkA{ncdfData}{ncdfData}}.
+Where PBSsatellite functions expect \code{\LinkA{ncdfData}{ncdfData}} objects, they may verify the existance of this class.
+
+\subsection{Structure details}
+
+As introduced in Sect.~\ref{s:ncdfData}, an \code{\LinkA{ncdfData}{ncdfData}} object often contains multiple time slices.
+A single slice can be retrieved by either name or index, e.g.,~the syntax \lstinline{sst$"2001-02-01"} and \lstinline{sst[[1]]} both retrieve the first (and oldest) slice from the \lstinline+sst+ data set.\footnote{
+  The \lstinline+sst+ data set comes with PBSsatellite, and it can be loaded with the command \lstinline{data(sst)}.
+}
+Each slice must always have a layer (\texttt{data}) containing the satellite data, and it may contain additional layers such as the missing and/or error layer.
+The \code{\LinkA{scaleRegion}{scaleRegion}} function can create these two additional layers when it scales down an \code{\LinkA{ncdfData}{ncdfData}} object.
+The missing layer (\texttt{miss}) contains the percentage of missing values encountered when scaling down a region.
+Similarly, the error layer (\texttt{error}) contains the percentage of error when scaling down a region.
+It is important to note that these additional layers must have the same dimensions as the data layer, i.e.,~they must contain point-for-point as much data (Fig.~\ref{fig:ncdfDataLayers}).
+
+\begin{figure}
+  \centering
+  \fbox{
+    \includegraphics{images/ncdfDataLayers}
+  }
+  % NOTE: \code{\LinkA{...}{...}} does *NOT* work within \caption
+  \caption{\texttt{ncdfData} Layers. (* = Required Layer)}
+  \label{fig:ncdfDataLayers}
+\end{figure}
+
+Each layer in an \code{\LinkA{ncdfData}{ncdfData}} object is stored as a matrix.
+For slices with multiple layers, individual layers can be retrieved using list notation in the same way that slices can be retrieved.
+
+\label{par:missingData}
+In certain data sets such as the ones that pertain to SST (Sea Surface Temperature), it is common to have missing data values, e.g.,~data points on land or points obstructed by cloud cover.
+In an \code{\LinkA{ncdfData}{ncdfData}} object, a \lstinline{NA} value is used to represent missing data.
+
+Using matrices to store geographic data can be problematic as matrices are inherently rectangular and areas of interest may be non-rectangular.
+A non-rectangular region can be represented within rectangular matrices by assigning the value \lstinline{NaN} (Not a Number) to points outside the region of interest.
+
+In order to save processing time and space for such an \code{\LinkA{ncdfData}{ncdfData}} object, functions will always produce the lowest dimension matrices (considering all layers) that can store all of the object's data (values not encoded as \lstinline{NaN}).
+In other words, any rows or columns in an \code{\LinkA{ncdfData}{ncdfData}} object that contain \lstinline{NaN} values exclusively will be removed, as these regions are no longer of importance due to clipping.
+For an example, see Figs.~\ref{fig:ETS_polys} and \ref{fig:ETS_clipped}.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=1]{ETS_polygons}
+  % NOTE: \code{\LinkA{...}{...}} does *NOT* work within \caption
+  \caption{
+    Three arbitrary polygons (blue) and the polygons from PBSmapping's \texttt{worldLL} data set (white) plotted on unclipped \texttt{ncdfData}.
+  }
+  \label{fig:ETS_polys}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=1]{ETS_polygons_clipped}
+  % NOTE: \code{\LinkA{...}{...}} does *NOT* work within \caption
+  \caption{
+    The result of clipping \texttt{ncdfData} using the polygons in Fig.~\ref{fig:ETS_polys}.
+    In the resulting \texttt{ncdfData} object, \texttt{NaN} values represent clipped areas outside of the three polygons and \texttt{NA} values represent areas inside the polygons that have a missing data component.
+  }
+  \label{fig:ETS_clipped}
+\end{figure}
+
+The code below shows creating, printing, and plotting a trivial \code{\LinkA{ncdfData}{ncdfData}} object.
+
+\begin{minipage}[t]{1.0\linewidth}
+  \begin{minipage}[t]{0.4\linewidth}
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily,aboveskip=0pt,belowskip=0pt]
+d <- list()
+d$`2017-06-16` <- list()
+d$`2017-06-16`$data <-
+  matrix(c(1, 1, 2, 3),
+         nrow=2,
+         byrow=FALSE)
+attr(d, "x") <- c(-128, -127)
+attr(d, "y") <- c(49, 48)
+attr(d, "dataType") <- "Sample"
+attr(d, "dataUnits") <- "none"
+attr(d, "class") <- "ncdfData"
+\end{lstlisting}
+  \end{minipage}%
+  \begin{minipage}[t]{0.4\linewidth}
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily,aboveskip=0pt,belowskip=0pt]
+> print(d)
+\end{lstlisting}
+\begin{Verbatim}[fontsize=\scriptsize]
+NCDF data
+  Data type:  Sample
+  Data units: none
+Slices:
+  Count: 1
+  First: 2017-06-16
+  Last:  2017-06-16
+Slice data:
+  X: -128.000 to -127.000 by  1.000
+  Y:   48.000 to   49.000 by  1.000
+\end{Verbatim}
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily,aboveskip=0pt,belowskip=0pt]
+> print(d$`2017-06-16`$data)
+\end{lstlisting}
+\begin{Verbatim}[fontsize=\scriptsize]
+     [,1] [,2]
+[1,]    1    2
+[2,]    1    3
+\end{Verbatim}
+  \end{minipage}%
+  \begin{minipage}[t]{0.2\linewidth}
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily,aboveskip=0pt,belowskip=0pt]
+> plot(d, slice=1)
+\end{lstlisting}
+\includegraphics[trim=0 0 0 1cm, scale=.7]{trivial}
+  \end{minipage}
+\end{minipage}
+
+\section{TimeSeries data structure}
+\label{sub:timeseries}
+
+A \lstinline{TimeSeries} is a list of data frames that contains an analytical summary of an \code{\LinkA{ncdfData}{ncdfData}}'s slices over time.
+A \lstinline{TimeSeries} object can be created using the function \code{\LinkA{extractTimeSeries}{extractTimeSeries}}.
+The \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function will accept standard R summary functions such as \lstinline{mean}, \lstinline{sum}, and \lstinline{sd} (standard deviation).
+In addition to standard R functions the \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function will accept user defined summary functions.
+User defined summary functions provides users with the ability to incorporate their own research and summary techniques into the \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function, which allows for unique data analysis.
+All of the summary functions provided with the \lstinline{functions} argument will be used when creating the \lstinline{TimeSeries}.
+
+If a \lstinline{polygons} argument is provided to the \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function, this will create subregions in each \code{\LinkA{ncdfData}{ncdfData}} slice.
+Data are then extracted from each of these subregions and processed individually by all of the specified summary functions.
+If a \lstinline{polygons} argument is not provided the whole \code{\LinkA{ncdfData}{ncdfData}} is considered one large subregion and the entire object will be individually analyzed by the supplied summary functions.
+
+A \lstinline{TimeSeries} object contains a list of data frames.
+Each data frame contains a summary for a single slice of an \code{\LinkA{ncdfData}{ncdfData}} object.
+\lstinline{TimeSeries} objects may have different data frames as each polygon adds an additional row and each summary function creates and additional column; therefore, within a single \lstinline{TimeSeries}, all data frames are uniform.
+Each data frame row is identified by a \lstinline{PID} (polygon identifier) to represent the subregion that data belongs to.
+If a \lstinline{polygons} argument is provided, each polygon is given a number of 1 to n polygons in the order in which the polygons were passed in (Fig.~\ref{fig:ETS_out_1}).
+
+Slices from the original \code{\LinkA{ncdfData}{ncdfData}} object may be omitted from the \lstinline{TimeSeries} object using \code{\LinkA{extractTimeSeries}{extractTimeSeries}}'s \lstinline{tlim} (time limit) argument.
+When the user provides a \lstinline{tlim} argument, only the slices that fall within the provided \lstinline{tlim} will be used to create the \lstinline{TimeSeries} object.
+The \lstinline{xlim} and \lstinline{ylim} arguments allow the user to limit the range of x and y coordinates that will be used in the \lstinline{TimeSeries}.
+Just like the \lstinline{tlim} argument only the coordinates that fall within the ranges of \lstinline{xlim} and \lstinline{ylim} will be used to create the \lstinline{TimeSeries}. 
+When using the \lstinline{xlim} and \lstinline{ylim} arguments, it is possible to clip out polygons.
+In the case where a polygon has been clipped, the data frame will have a missing \lstinline{PID} for the polygon that has been removed (Figs.~\ref{fig:ETS_out_1}(no clipped polygons) and \ref{fig:ETS_out_2}(clipped polygons)).
+
+\begin{figure}
+  \centering
+  % align content to the bottom
+  \begin{minipage}[b]{0.56\linewidth}
+    \centering
+    \lstinputlisting[linewidth=\linewidth,frame=single,basicstyle=\ttfamily\footnotesize{}]{ETS_out.R}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.40\linewidth}
+    \centering
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize{}]
+$`2001-02-01`
+  PID     sum      mean        sd
+1   1 1190.98  2.802306 7.5412064
+2   2 1729.63 15.040261 0.8559354
+
+$`2001-03-01`
+  PID     sum      mean        sd
+1   1 1152.40  2.711529 7.4471030
+2   2 1733.61 15.074869 0.7494353
+
+$`2001-04-01`
+  PID     sum      mean       sd
+1   1 1254.69  2.952212 7.716375
+2   2 1825.51 15.874000 0.721301
+
+$`2001-05-01`
+  PID     sum      mean        sd
+1   1 1535.88  3.613835 8.1701254
+2   2 2082.60 18.109565 0.5885894
+    \end{lstlisting}  
+  \end{minipage}\\
+  % align captions to the top
+  \begin{minipage}[t]{0.56\linewidth}
+    \centering
+
+    \subcaption{
+      The code to create a \texttt{TimeSeries} object.
+      The function \texttt{extractTimeSeries} uses \texttt{sum}, \texttt{mean}, and \texttt{sd} by default.
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.40\linewidth}
+    \centering
+    \subcaption{
+      The resulting \texttt{TimeSeries} object created by the sample code in (a).
+    }
+  \end{minipage}
+  \caption{
+    Sample code to create a \texttt{TimeSeries} object and the resulting object.
+  }
+  \label{fig:ETS_out_1}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{minipage}[b]{0.56\linewidth}
+    \centering
+    \lstinputlisting[linewidth=\linewidth,frame=single,basicstyle=\ttfamily\footnotesize{}]{ETS_out_clipped.R}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.40\linewidth}
+    \centering
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize{}]
+$`2001-02-01`
+  PID     sum     mean        sd
+1   2 1196.96 14.59707 0.4590395
+
+$`2001-03-01`
+  PID     sum     mean        sd
+1   2 1203.55 14.67744 0.3992889
+
+$`2001-04-01`
+  PID     sum     mean        sd
+1   2 1269.96 15.48732 0.3930226
+
+$`2001-05-01`
+  PID     sum     mean        sd
+1   2 1459.84 17.80293 0.3553732
+    \end{lstlisting}  
+  \end{minipage}\\
+  \begin{minipage}[t]{0.56\linewidth}
+    \centering
+    \subcaption{
+      Code that creates a \texttt{TimeSeries} object.
+      The function \texttt{extractTimeSeries} accounts for both PolySet's polygons and the \texttt{xlim} and \texttt{ylim} arguments.
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.40\linewidth}
+    \centering
+    \subcaption{
+      The resulting \texttt{TimeSeries} object created by the sample code in (a).
+      Notice that the X/Y limits caused the first and third polygons to be clipped.
+    }
+  \end{minipage}
+  \caption{
+    Sample code to create a \texttt{TimeSeries} object that combines a PolySet with \texttt{xlim} and \texttt{ylim} arguments.
+    Note that a polygon (PID 1) is missing in the resulting \texttt{TimeSeries} due to a clipping operation specified by the \texttt{xlim} and \texttt{ylim} arguments.
+  }
+  \label{fig:ETS_out_2}
+\end{figure}
+
+\chapter{Usage patterns}
+\label{c:UsagePatterns}
+
+This chapter describes some common usage patterns and aims to further explain the package's functionality.
+PBSsatellite's functionality greatly simplifies the otherwise complex operations.
+
+The first example describes how to create a time series plot from imported satellite data to visualize changes over time.
+The second describes how to leverage a related package, PBSmapping, to create a complex polygon of British Columbia's coastline.
+After creating this polygon, it is possible to extract, from an \code{\LinkA{ncdfData}{ncdfData}} object, the data points that overlap with the ocean.
+Following the extraction, this resulting \code{\LinkA{ncdfData}{ncdfData}} object could be processed as in the first example to create a time series plot for the coastal region. 
+Finally, the last example describes how to convert a sequence of files from version 4 of the Hierarchical Data Format (HDF) to NetCDF.
+Following the conversion, PBSsatellite can import the data into R.
+
+\section{Creating time series plots}
+\label{sec:creating_ts}
+
+When studying satellite data, the ability to quickly visualize trends for a specific geographic region can improve the efficiency of data analysis.
+In PBSsatellite, the \code{\LinkA{extractTimeSeries}{extractTimeSeries}} function returns a \lstinline{TimeSeries} object.
+This object has a straightforward structure (Section~\ref{sub:timeseries}), and using the PBSsatellite function \code{\LinkA{listToDF}{listToDF}}, can be converted into a data frame and easily plotted using built-in R functions.
+
+Consider the first slice of the sea-surface temperature data set (\code{\LinkA{sst}{sst}}) included with the PBSsatellite package (Fig.~\ref{fig:sst}a).
+Suppose that the user wants to extract time series data for each hemisphere and plot the mean sea surface temperature for each hemisphere.
+The PBSmapping commands
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{g <- makeGrid(x=c(0, 360), y=c(-90, 0, 90), addSID=FALSE)}
+> \textbf{print(g)}
+  PID POS   X   Y
+1   1   1   0 -90
+2   1   2 360 -90
+3   1   3 360   0
+4   1   4   0   0
+5   2   1   0   0
+6   2   2 360   0
+7   2   3 360  90
+8   2   4   0  90
+\end{Verbatim}
+create a PolySet with one polygon for each hemisphere (Fig.~\ref{fig:sst}b).
+Superimposing the two polygons (Fig.~\ref{fig:sst}b) over the sea-surface temperatures (Fig.~\ref{fig:sst}a) with the commands
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{plot(sst, slice=1)}
+> \textbf{addPolys(g, col=adjustcolor(c("blue", "red"), alpha.f=0.5))}
+\end{Verbatim}
+produces Fig.~\ref{fig:sst}c and clearly shows the relationship between the polygons and the data set.
+
+\begin{figure}[!h]
+  \centering
+  \begin{minipage}[b]{.30\linewidth}
+    \includegraphics[width=\linewidth]{sst_a}
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[b]{0.30\linewidth}
+    \includegraphics[width=\linewidth]{sst_b}
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[b]{0.30\linewidth}
+    \includegraphics[width=\linewidth]{sst_c}
+  \end{minipage}\\
+  \begin{minipage}[t]{0.30\linewidth}
+    \subcaption{
+      The \texttt{sst} data set bundled with PBSsatellite.
+    }
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[t]{0.30\linewidth}
+    \subcaption{
+      The PolySet generated by \texttt{makeGrid}.
+    }    
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[t]{0.30\linewidth}
+    \subcaption{
+      The PolySet representing the two hemispheres superimposed on the \texttt{sst} data set.
+    }    
+  \end{minipage}
+  \caption{Input data used in this example.}
+  \label{fig:sst}
+\end{figure}
+
+Given this input data, the PBSsatellite function \code{\LinkA{extractTimeSeries}{extractTimeSeries}} can extract summary data for each polygon from each slice of the \code{\LinkA{sst}{sst}} object.
+The command
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{extractTimeSeries(sst)}
+\end{Verbatim}
+will generate Fig.~\ref{fig:listToDF}a.
+Although such a \lstinline{TimeSeries} object follows rather directly from the input data, it is not especially amenable to plotting and further analysis.
+The PBSsatellite function \code{\LinkA{listToDF}{listToDF}} simplifies further processing by using the list element names to collapse the data frames into a single data frame while generating a new column for the names (Fig.~\ref{fig:listToDF}b). 
+
+\begin{figure}[!h]
+  \centering
+  \begin{minipage}[b]{.35\linewidth}
+\begin{Verbatim}[fontsize=\small,samepage=true]
+$`2001-02-01`
+  PID      sum     mean       sd
+1   1 357483.4 15.46141 10.73330
+2   2 246355.0 11.67670 11.95005
+
+$`2001-03-01`
+  PID      sum     mean       sd
+1   1 355020.1 15.35488 10.92622
+2   2 247695.1 11.74022 12.07278
+
+$`2001-04-01`
+  PID      sum     mean       sd
+1   1 342895.3 14.83047 11.02855
+2   2 255777.8 12.12332 12.28897
+
+$`2001-05-01`
+  PID      sum     mean       sd
+1   1 325321.3 14.07038 10.92656
+2   2 271396.7 12.86362 12.42489
+\end{Verbatim}
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[b]{0.45\linewidth}
+\begin{Verbatim}[fontsize=\small,samepage=true]
+       names PID      sum     mean       sd
+1 2001-02-01   1 357483.4 15.46141 10.73330
+2 2001-02-01   2 246355.0 11.67670 11.95005
+3 2001-03-01   1 355020.1 15.35488 10.92622
+4 2001-03-01   2 247695.1 11.74022 12.07278
+5 2001-04-01   1 342895.3 14.83047 11.02855
+6 2001-04-01   2 255777.8 12.12332 12.28897
+7 2001-05-01   1 325321.3 14.07038 10.92656
+8 2001-05-01   2 271396.7 12.86362 12.42489
+\end{Verbatim}
+  \end{minipage}\\
+  \begin{minipage}[t]{0.35\linewidth}
+    \subcaption{
+      Sample list produced by \texttt{extractTimeSeries}.
+    }
+  \end{minipage}\hspace{5mm}
+  \begin{minipage}[t]{0.45\linewidth}
+    \subcaption{
+      Sample data frame returned from \texttt{listToDF} when given the list in (a).
+    }    
+  \end{minipage}
+  \caption{Conversion from a list produced by \texttt{extractTimeSeries} to a data frame using the function \texttt{listToDF}.}
+  \label{fig:listToDF}
+\end{figure}
+
+Given the data frame from \code{\LinkA{listToDF}{listToDF}}, built-in R functions can generate a time series plot (Fig.~\ref{fig:plot_ts_1}).
+This figure provides code for the complete process that includes creating one polygon for each hemisphere, creating a \lstinline{TimeSeries} object, and plotting the collapsed time series object.
+
+\begin{figure}[!p]
+  \centering
+  \begin{minipage}[b]{\linewidth}
+    \centering
+    \includegraphics[scale=1]{plot_ts_1}
+    \subcaption{
+      A time series plot showing the mean sea surface temperature for data within the southern (blue) and northern (red) hemispheres.
+    }
+  \end{minipage}\\
+  \begin{minipage}[b]{\linewidth}
+    \centering
+    \lstinputlisting[linewidth=\linewidth,multicols=2,xleftmargin=4mm,
+    basicstyle=\ttfamily\footnotesize{},
+    numbers=left, firstline=6,lastline=42]{plot_ts_1.R}
+    \subcaption{
+      The code used to generate the time series plot shown in (a).
+    }
+  \end{minipage}\\
+  \caption{Time series plot.}
+  \label{fig:plot_ts_1}
+\end{figure}
+
+\section{Working with coastlines}
+
+Satellite data sets often include points spanning the entire globe, and in many cases, these readings include both land and water.
+On the other hand, analysis may focus on a specific geographic area, e.g., only measurements for the water within a region.
+This section provides an example of selecting a region of interest (a coastline) and excluding land measurements from the \code{\LinkA{ncdfData}{ncdfData}} object.
+
+In this scenario, a user wants to perform sea-surface temperature analysis on the coastal region of British Columbia (BC).
+Consider the sea-surface temperature data set (\code{\LinkA{sst}{sst}}) included with PBSsatellite, which was previously used in Sec.~\ref{sec:creating_ts} (Fig.~\ref{fig:sst}a).
+The PBSmapping commands
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{bcCoast <- data.frame(PID=c(rep(1, 7)), POS=c(1:7),}
+> \textbf{                      X=c(223, 226, 235, 238, 238, 226, 223),}
+> \textbf{                      Y=c( 58,  53,  48,  48,  50,  60, 59.5))}
+> \textbf{bcCoast <- as.PolySet(bcCoast, projection="LL")}
+> \textbf{print(bcCoast)}
+  PID POS   X    Y
+1   1   1 223 58.0
+2   1   2 226 53.0
+3   1   3 235 48.0
+4   1   4 238 48.0
+5   1   5 238 50.0
+6   1   6 226 60.0
+7   1   7 223 59.5
+\end{Verbatim}
+create a \lstinline{PolySet} containing a polygon with seven vertices that overlies both land and sea within the BC coastal region (Fig.~\ref{fig:coast_bc_sst}a).
+PBSmapping includes the \texttt{joinPolys} function, which can join one or more PolySets using a logical operation, and this function can be used to subtract the BC coastline and its islands from the seven-vertex polygon to exclude land readings.
+The following PBSmapping commands
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{data(worldLLhigh)}
+> \textbf{bcComplex <- joinPolys(bcCoast, worldLLhigh, operation="DIFF")}
+\end{Verbatim}
+perform the subtraction and produce the polygon shown in Fig.~\ref{fig:coast_bc_sst}b.
+
+The PBSsatellite commands
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\},samepage=true]
+> \textbf{data(sst)}
+> \textbf{sstBcCoast <- clipRegion(sst, polygons=bcComplex)}
+\end{Verbatim}
+clip data from the existing data set (\code{\LinkA{sst}{sst}}).
+The resulting data set contains sea-surface temperature readings for the coloured portions of Fig.~\ref{fig:coast_bc_sst}c.
+Note that regions without colour have no numerical value.
+
+\begin{figure}[!h]
+  \centering
+  \begin{minipage}[b]{0.32\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{coast_bc_poly}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.32\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{coast_bc_joinPoly}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.32\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{sst_coast_bc}
+  \end{minipage}\\
+  \begin{minipage}[t]{0.32\linewidth}
+    \centering
+    \subcaption{
+      Arbitrary polygon used in this example.
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.32\linewidth}
+    \centering
+    \subcaption{
+      Polygonal result of subtracting (a) from the BC coast (\texttt{worldLLhigh}) with PBSmapping's \texttt{joinPolys} function.
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.32\linewidth}
+    \centering
+    \subcaption{
+      Sea surface temperature (SST) data clipped using the polygon in (b).
+    }
+  \end{minipage}
+  \caption{
+    The steps in isolating the sea surface temperatures (SSTs) within an arbitrary polygon.
+  }
+  \label{fig:coast_bc_sst}
+\end{figure}
+
+\section{HDF to NetCDF to \texttt{ncdfData} conversion}
+
+As stated in section~\ref{s:ncdfDependency} HDF file formats are lacking sufficient R libraries, for these reasons PBSsatellite is currently working with NetCDF files.
+On of the goals with PBSsatellite was to create a platform for satellite analysis that expands beyond the boundaries of a singular data format such as NetCDF.
+The more data sets that are compatible with this package the more powerful it will become, the quality of satellite analysis strongly depends on the quality and variety of satellite data available. 
+For these reasons providing users with the ability to convert data sets into a supported file format is fundamental.
+
+HDF files are known to provide high resolution data and they also offer a large variety of data, this made the HDF to \code{\LinkA{ncdfData}{ncdfData}} conversion an obvious choice for this usage pattern.
+Because NetCDF is currently the only supported file format for PBSsatellite we took a conversion approach to make HDF files compatible.
+By converting HDF to NetCDF files we are able to accommodate HDF data files without adding more library dependencies to the package.
+These converted NetCDF files can then be transformed into \code{\LinkA{ncdfData}{ncdfData}} objects.
+
+\subsection{Conversion software}
+\label{s:software}
+
+Here are two software packages that are necessary to complete the the HDF to \code{\LinkA{ncdfData}{ncdfData}} conversion.
+
+Software designed by NCAR Command Language (NCL) provides NetCDF conversion functionality for multiple satellite files at once, including HDF to NetCDF conversation.
+This software also provides functionality for other file types to be converted to NetCDF.
+
+A strong benefit of this software is that it provides version for Windows, Mac, and Linux systems with user friendly step by step installation instructions and examples.
+The software installation instructions can be found at \url{https://www.ncl.ucar.edu/Download/}.
+Navigate halfway down the page to a section labelled ``Download source code or the appropriate binaries for your system.''
+
+The second software package that aids in the HDF to \code{\LinkA{ncdfData}{ncdfData}} conversion is developed by the NetCDF Operators (NCO) and provides NetCDF merging functionality.
+NCO additionally provides a variety of additional tools such as ones for renaming and creating dimensions which are fundamental for this conversion process.
+
+As well as NCL, NCO also provides software versions for Windows, Mac, and Linux systems.
+Users can download NCO and access installation instructions here~\url{http://nco.sourceforge.net/} find the section ``Get NCO Binary Executables'' which will walk you through a step by step installation process.
+
+\subsection{Problems with converted NetCDF files}
+\label{s:problemsNetCDF}
+
+Here is the list of problems that we will solve in our conversion process.
+The solutions to the following problems are documented in section~\ref{s:conversion}.
+
+HDF files contain information for one date at a time:
+This means if we converted these NetCDF files to \code{\LinkA{ncdfData}{ncdfData}} objects they only contain a single slice which creates limitations.
+Previous NetCDF files we used used contained data over a time period, the data for these dates were merged together and stored in an array.
+For example, the data component of a NetCDF file could access different slices in time with the following operation:
+data[, , 1]~(first slice) or data[, , 2]~(second slice).
+With the current conversion this data this component is lacking and will need to be created, this will be done by merging the new NetCDF files together.
+
+Merged NetCDF files contain the following inconsistencies with when compared to native NetCDF files.
+
+Time attributes are incorrectly formatted:
+The time unit attribute in these converted files is spread over multiple parameters such as a day, hour, minute, seconds.
+Where as the time attribute in native NetCDF files is formatted in a single time units attribute such as ``days since 2006-01-01 00:00:00.''
+
+Time dimension is absent:
+With a correct time attribute a dimension must be specified.
+This dimension holds a 1:1 ratio per sheet in the NetCDF file, or for each file we have merged together i.e, if we have merged 3 hdf files together this array will be of size 3.
+It is mandatory to know when slice in an \code{\LinkA{ncdfData}{ncdfData}} object has occurred, without a time dimension time series analysis is not possible.
+
+Latitude and Longitude coordinate sequences are absent:
+The new NetCDF files do not contain proper X and Y sequence components see figure~\ref{fig:attributes} for more information on these sequences.
+Without these components it is not possible to create an \code{\LinkA{ncdfData}{ncdfData}} object because points of data are lacking locations in geographic space. 
+
+\begin{figure}[!h]
+  \centering
+  \begin{minipage}[b]{0.5\linewidth}
+\begin{Verbatim}[fontsize=\small]
+$names
+[1] "1-02-01" "1-03-01" "1-04-01" "1-05-01"
+
+$dataType
+[1] "Long Term Mean of Sea Surface Temperature"
+
+$dataUnits
+[1] "degC"
+
+$x
+  [1]   0.5   1.5   2.5   3.5   ...    359.5
+
+$y
+  [1]  89.5  88.5  87.5  86.5   ...    -89.5
+
+$class
+[1] "ncdfData"  
+\end{Verbatim}
+  \end{minipage}
+  % NOTE: \code{\LinkA{...}{...}} does *NOT* work within \caption
+\caption{The attributes of a sample \texttt{ncdfData} object within R.}
+\label{fig:attributes}
+\end{figure}
+
+Missing value attribute is not properly formatted:
+The missing value argument, while it is included in the in the new NetCDF file it is not named properly.
+On import the ncdf4 library automatically detects the missing value argument and converts them all occurrences of these values to \lstinline{NA}.
+In order for plots and data analysis to be accurate it is essential to properly format the missing values. 
+
+With the additional software package NCO we can successfully fix all of the above issues and are able to make the newly created NetCDF files fully functional with our package.
+This whole process is possible without adding extra R software or library dependencies.
+
+\subsection{HDF to NetCDF to \texttt{ncdfData} conversion process}
+\label{s:conversion}
+
+This section provides a step-by-step description of how HDF data can be imported into PBSsatellite.
+The process involves converting the HDF files into NetCDF files, which are subsequently merged and used to create an \code{\LinkA{ncdfData}{ncdfData}} object.
+
+This conversion is described in four parts.
+Parts one to three use the operating system's command line with the required software mentioned in section~\ref{s:software}.\footnote{
+  We tested these commands on both an Ubuntu Linux and a Mac OS X machine.
+  The commands may need to be adapted for a Windows machine.}
+Part four uses R and completes the conversion by creating an \code{\LinkA{ncdfData}{ncdfData}} object.
+
+At the start of the process, assume that three HDF files exist in a directory with the following filenames: \texttt{20150702.hdf}, \texttt{20150706.hdf}, and \texttt{20150709.hdf}.\footnote{
+  These files were downloaded from \url{http://data.nodc.noaa.gov/crw/tsps50km/sst/2015/}.
+  The original filenames, e.g.,~\texttt{sst.night.field.50km.n19.20150702.hdf}, have been abbreviated for clarity.}
+These three related HDF files hold data separated by three days each, with the first file having the date July 2, 2015.
+It is important that all of the HDF files are from the same data source as attempts to merge files with varying resolutions and/or units will likely fail.
+If the file names did not contain necessary information for the conversion, e.g., dates or units, the command \texttt{ncl\_filedump} can be used to gather more information about the file, e.g., Fig.~\ref{fig:filedump}.
+
+\begin{figure}[!h]
+  \centering
+  \begin{minipage}[b]{0.6\linewidth}
+\begin{Verbatim}[fontsize=\small,commandchars=\\\{\}]
+$ \textbf{ncl_filedump 20150702.hdf}
+ Copyright (C) 1995-2015 - All Rights Reserved
+ University Corporation for Atmospheric Research
+ NCAR Command Language Version 6.3.0
+ The use of this software is governed by a License Agreement.
+ See http://www.ncl.ucar.edu/ for more details.
+
+Variable: f
+Type: file
+filename:	20150702
+path:	20150702.hdf
+   file global attributes:
+      crwhdf_version : 1.0
+      cwhdf_version : 3.4
+      ...
+      start_time : 14400
+      start_time_unit : seconds since 00:00:00 UTC
+      begin_date : 2015-06-29
+      begin_time : 04:00:00 UTC
+      stop_date : 2015-07-02
+      stop_time : 04:00:00 UTC
+      ...
+\end{Verbatim}
+\end{minipage}
+  \caption{Abbreviated output from the command \texttt{ncl\_filedump} showing the date and time of collection.}
+  \label{fig:filedump}
+\end{figure}
+
+\subsubsection{Part 1: Convert HDF files to NetCDF}
+
+The program \texttt{ncl\_convert2nc} performs the HDF to NetCDF conversion.
+Further documentation and examples can be found at \url{https://www.ncl.ucar.edu/Document/Tools/ncl_convert2nc.shtml}.
+
+The following command
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\}]
+$ \textbf{ncl_convert2nc *.hdf -c 'Comment: Converted 3 HDF version 4 files to NetCDF'}
+\end{Verbatim}
+will convert all of the files with the \texttt{hdf} file extension within the current directory, and it will produce NetCDF files within the same directory.
+The \texttt{-c} argument will create a comment within the new NetCDF files.
+In our example, the preceding command will convert \texttt{20150702.hdf}, \texttt{20150706.hdf}, and \texttt{20150709.hdf} to produce \texttt{20150702.nc}, \texttt{20150706.nc}, and \texttt{20150709.nc}, respectively.
+
+\subsubsection{Part 2: Merge New NetCDF Files}
+\label{s:conversion:p2}
+
+After converting individual HDF files to the NetCDF format, the individual NetCDF files must be merged into a single NetCDF file containing an array of slices (Section~\ref{s:problemsNetCDF}).
+To simplify the commands in Part 3, we recommend that you create the output file in a different directory than the input files, e.g.,~a subdirectory named \texttt{out}.
+The following command
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\}]
+$ \textbf{ncecat 20150702.nc 20150706.nc 20150709.nc out/20150702-20150709.nc}
+\end{Verbatim}
+will merge all of the files with the file extension \texttt{nc} within the current directory, and it will produce the output file \texttt{20150702-20150709.nc} within a directory named \texttt{out}.
+In the preceding command, the input filenames were listed explicitly to ensure that they appeared in the correct order.
+Depending on the filenames, you may be able to use a shortcut.
+If the following command
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\}]
+$ \textbf{echo *.nc}
+20150702.nc 20150706.nc 20150709.nc
+\end{Verbatim}
+lists the files in the correct order, then the \texttt{ncecat} command line can safely be abbreviated to
+\begin{Verbatim}[xleftmargin=.5in,commandchars=\\\{\}]
+$ \textbf{ncecat *.nc 20150702-20150709.nc}
+\end{Verbatim}
+
+\subsubsection{Part 3: Add Missing Attributes}
+\label{ss:missingattr}
+
+At this stage, we have a single NetCDF file (\texttt{20150702-20150709.nc}) that contains the data of all the source NetCDF files.
+Before we can import this file into an R-based \code{\LinkA{ncdfData}{ncdfData}} object, we must add some fundamental dimensions to it:
+\begin{itemize}
+\item an integer \texttt{time} dimension for units since an epoch,
+\item a \texttt{lon} dimension for longitude values in the grid,
+\item a \texttt{lat} dimension for latitude values in the grid, and
+\item an integer \texttt{missing\_value} attribute that specifies the value used for missing data.
+\end{itemize}
+%In this part, we From this point on we will only be working with the file that has been merged in Part 2 ``2006-1-1-2006-1-19.nc.''
+
+The integer \texttt{time} dimension will provide a timestamp for each slice within the merged file.
+We recommend that you use \texttt{ncl\_filedump} to manually find the appropriate attributes by inspecting one of the input NetCDF files, e.g.,
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{ncl_filedump 20150702.nc}
+      ...
+      pass_date_unit : days since 1 January 1970
+      pass_date : 16615
+      ...
+\end{Verbatim}
+In the sample above, the string \texttt{pass\_date\_unit} describes the epoch and \texttt{pass\_date} provides an appropriate integer for the \texttt{time} dimension.
+At this time, note the string used for the epoch; you will not need it until Part 4.
+To extract all of the integer timestamps, use the following command
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{TIMES=($(ls *.nc | xargs -n1 ncl_filedump | grep "pass_date :" | egrep -o '\d+'))}
+\end{Verbatim}
+and determine whether the command succeeded by listing the times with the command
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{echo ${TIMES[@]}}
+\end{Verbatim}
+In our example, the command produces the output \texttt{16615 16618 16622}.
+
+Given that the variable \texttt{TIMES} now contains the timestamps, we can add them to the merged NetCDF file with the following command
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \bfseries{}ncap2 -Oh -s "defdim(\textbackslash{}"time\textbackslash{}", $\{#TIMES[@]\}); \textbackslash{}
+  \bfseries{}              time[time]=\{$(IFS=,; echo "$\{TIMES[*]\}")\};" \textbackslash{}
+  \bfseries{}  out/20150702-20150709.nc out/20150702-20150709.nc
+\end{Verbatim}
+% ncap2 -Oh -s "defdim(\"time\", ${#TIMES[@]}); time[time]={$(IFS=,; echo "${TIMES[*]}")};" out/20150702-20150709.nc out/20150702-20150709.nc
+
+In the preceding command, \verb+defdim(\"time\", ${#TIMES[@]});+ defines a new dimension named \texttt{time} with a fixed size equal to the number of times in the variable names \texttt{TIMES}.
+The fixed size should also correspond to the number of files that were merged together.
+The argument \texttt{out/20150702-20150709.nc} appears twice on the command line: the first occurrence refers to the input file and the second the output file.
+In this particular case, the command will overwrite the file \texttt{out/20150702-20150709.nc} with a new file containing the time dimension.
+
+The next step in this part involves involves adding the longitude (\texttt{lon}) and latitude (\texttt{lat}) dimensions to the NetCDF file.
+We recommend that you use \texttt{ncl\_filedump} to manually determine the distance between points in the newly created NetCDF file \texttt{out/20150702-20150709.nc}.
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{ncl_filedump out/20150702-20150709.nc}
+      ...
+      easternmost_longitude : 179.75
+      westernmost_longitude : 179.75
+      northernmost_latitude : 85.25
+      southernmost_latitude : -80.25
+      spatial_description : The rows of the data array are
+        oriented in west-east direction and columns in north-south
+        direction.  Each element (pixel) is 0.5 by 0.5 degree in
+        size. The first element (0,0) is at the northwest corner of
+        the coverage area.  The southernmost_latitude,
+        northernmost_latitude, westernmost_longitude, and
+        easternmost_longitude attributes give the locations of the
+        outer edges of the boundary pixels.
+      ...
+      spatial_resolution_row :  0.5
+      spatial_resolution_column :  0.5
+      ...
+      latitude = 331
+      longitude = 720
+\end{Verbatim}
+Note that the attribute names vary between NetCDF files.
+For example, we have observed \texttt{Longitude\_Step} and \texttt{Latitude\_Step} in place of \texttt{spatial\_resolution\_column} and \texttt{spatial\_resolution\_row}, respectively.
+Look for attributes that describe the data layout, too, e.g.,~the preceding \texttt{spatial\_description} attribute.
+
+In the output above, note that \verb+westernmost_longitude+ and \verb+easternmost_longitude+ contain an error.
+Given that these boundaries represent the outer edges of boundary pixels (\verb+spatial_description+), the western-most pixel center would be -179.5 and the eastern-most pixel center would be 179.5.
+The sequence -179.5, -179.0, -169.5, \dots, 179.5 contains 719 points, one less than the expected 720.
+To determine the correct range of longitude points, we revisited the data source web site: \url{http://coralreefwatch.noaa.gov/satellite/metadata/crw_sst_50km_xml_2003_format_20110103.txt}.
+This page describes
+\begin{quote}
+Each grid is 0.5 degree latitude by 0.5 degree longitude in size, centered at latitudes of from 80.0S northward to 85.0N and at longitudes of from 180W eastward to 179.5E.
+\end{quote}
+
+The following commands will create and display the size of longitude and latitude dimensions.
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{LON=($(seq -180 0.5 179.5))}
+$ \textbf{echo $\{#LON[@]\}}
+720
+$ \textbf{LAT=($(seq 85 -0.5 -80))}
+$ \textbf{echo $\{#LAT[@]\}}
+331
+\end{Verbatim}
+Once these values are correct, the commands
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{ncap2 -Oh -s "defdim(\textbackslash{}"lon\textbackslash{}", $\{#LON[@]\}); \textbackslash{}}
+  \textbf{              lon[lon]=\{$(IFS=,; echo "$\{LON[*]\}")\};" \textbackslash{}}
+  \textbf{  out/20150702-20150709.nc out/20150702-20150709.nc}
+$ \textbf{ncap2 -Oh -s "defdim(\textbackslash{}"lat\textbackslash{}", $\{#LAT[@]\}); \textbackslash{}}
+  \textbf{              lat[lat]=\{$(IFS=,; echo "$\{LAT[*]\}")\};" \textbackslash{}}
+  \textbf{  out/20150702-20150709.nc out/20150702-20150709.nc}
+\end{Verbatim}
+% $ ncap2 -Oh -s "defdim(\"lon\", ${#LON[@]}); \
+%                 lon[lon]={$(IFS=,; echo "${LON[*]}")};" \
+%     out/20150702-20150709.nc out/20150702-20150709.nc
+% $ ncap2 -Oh -s "defdim(\"lat\", ${#LAT[@]}); \
+%                 lat[lat]={$(IFS=,; echo "${LAT[*]}")};" \
+%     out/20150702-20150709.nc out/20150702-20150709.nc
+will create the dimensions in the NetCDF file.
+
+In the last step of this part, an attribute named \texttt{missing\_value} may need to be added to the NetCDF file.
+The utility \texttt{ncl\_filedump} can help identify an appropriate value for this attribute:
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{ncl_filedump out/20150702-20150709.nc}
+         ...
+         missing_value :	-7777
+         ...
+         _FillValue :	-7777
+         ...
+\end{Verbatim}
+Note that the missing value attribute may appear under other names, too, e.g., \texttt{Fill}.
+In this particular case, the value -7777 is a placeholder for missing values in the data matrix.
+
+After identifying the value for the missing attribute, the following command can be used to set the attribute:
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+$ \textbf{ncatted -O -a missing_value,,c,i,"-7777" out/20150702-20150709.nc}
+\end{Verbatim}
+Even if a correctly-named attribute exists, the preceding call to \texttt{ncatted} can be used without causing any harm.
+It is important to use the name \texttt{missing\_value} because the R library \texttt{ncdf4} will look such an attribute when converting missing values to \lstinline{NA}.
+
+\subsubsection{Part 4: Create ncdfData object}
+
+The preceding parts have produced a NetCDF file, e.g.,~\verb+out/20150702-20150709.nc+ that can be imported into R.
+For this part, use the PBSsatellite package within R.
+
+The following command will create an \code{\LinkA{ncdfData}{ncdfData}} object and complete the conversation from HDF to \code{\LinkA{ncdfData}{ncdfData}}:
+\begin{Verbatim}[xleftmargin=0.5in,commandchars=\\\{\}]
+> \textbf{ncdfData <- read.ncdfData("out/20150702-20150709.nc",}
+  \textbf{                          Ux="degrees", Uy="degrees",}
+  \textbf{                          Utime="days since 1970-01-01",}
+  \textbf{                          dataUnits="x100 Celsius",}
+  \textbf{                          dataType="SST")}
+\end{Verbatim}
+Note that the units for both the X and Y dimension are specified using the argument \texttt{Uy} and \texttt{Uy}, respectively.
+The \texttt{Utime} argument uses the epoch noted earlier in subsection~\ref{ss:missingattr}.
+In order for the library to correctly interpret the string, the date \texttt{days since 1 January 1970} must be rewritten as \texttt{days since 1970-01-01}.
+In some cases, the R package \texttt{ncdf4} cannot detect data units; for this reason, specify \texttt{dataUnits} and \texttt{dataType} to ensure the \code{\LinkA{ncdfData}{ncdfData}} object has the correct information.
+The \texttt{dataUnits} argument specifies the units for each point of data in the data set, and the \texttt{dataType} effectively specifies the title for the data set.
+
+The output from the command-line program \lstinline{ncl_filedump} can provide hints for how to set these various arguments.
+For more information about \code{\LinkA{ncdfData}{ncdfData}} attributes, see section~\ref{s:ncdfData}.
+
+\chapter{PBSsatellite functions}
+\label{c:PBSsatelliteFunctions}
+
+\input{man.tex}
+
+\printbibliography[heading=bibintoc]
+
+\end{document}

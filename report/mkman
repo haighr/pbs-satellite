@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm -f man.tex
+for f in ../PBSsatellite/man/*.Rd; do
+    R CMD Rdconv -t latex $f >> man.tex
+    echo '\newpage' >> man.tex
+done

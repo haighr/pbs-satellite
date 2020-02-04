@@ -1,0 +1,18 @@
+Shortcuts for emacs with LaTeX
+
+C-c C-f C-b: bold (you can highlight a word -- or not)
+C-c C-f C-i: italics
+C-c C-f C-t: typewriter type
+
+C-c C-e: insert an environment (numbered list?)
+
+
+
+Possible environments:
+
+itemize: bullet points
+enumerate: numbered list
+table: table
+figure: figure
+
+
